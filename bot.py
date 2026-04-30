@@ -61,13 +61,70 @@ async def resumen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except FileNotFoundError:
         await update.message.reply_text("Aún no tenés gastos registrados.")
 
-
+# NUEVO COMANDO: /borrartodo
 async def borrar_todo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if os.path.exists('gastos.csv'):
         os.remove('gastos.csv')
         await update.message.reply_text("🗑️ Historial eliminado. ¡Cuenta reiniciada!")
     else:
         await update.message.reply_text("No hay ningún archivo de gastos para borrar.")
+
+
+import matplotlib.pyplot as plt
+import csv
+import os
+
+async def enviar_grafico(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    conceptos = []
+    montos = []
+    
+    try:
+        # 1. Leer los datos
+        with open('gastos.csv', 'r', encoding='utf-8') as archivo:
+            reader = csv.reader(archivo)
+            for fila in reader:
+                if fila:
+                    conceptos.append(fila[1])
+                    montos.append(float(fila[2]))
+
+        if not conceptos:
+            await update.message.reply_text("No hay datos suficientes para graficar.")
+            return
+
+        # 2. Configuración estética del gráfico
+        plt.style.use('ggplot') # Estilo profesional
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        # Crear barras con un color sólido y bordes
+        barras = ax.bar(conceptos, montos, color='#5dade2', edgecolor='#2e86c1')
+
+        # Añadir etiquetas de datos sobre cada barra
+        ax.bar_label(barras, padding=3, fmt='$%.2f', fontsize=10, fontweight='bold')
+
+        # Títulos y etiquetas
+        ax.set_title('📊 Análisis de Gastos Personales', fontsize=16, pad=20, fontweight='bold')
+        ax.set_ylabel('Monto en Pesos ($)', fontsize=12)
+        ax.set_xlabel('Conceptos', fontsize=12)
+        
+        # Ajustar para que no se corten los nombres largos
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+
+        # 3. Guardar y enviar
+        imagen_path = 'reporte_gastos.png'
+        plt.savefig(imagen_path, dpi=300) # dpi=300 para alta resolución
+        plt.close()
+
+        with open(imagen_path, 'rb') as foto:
+            await update.message.reply_photo(photo=foto, caption="Aquí tenés el resumen visual de tus finanzas. 📈")
+        
+        os.remove(imagen_path)
+
+    except FileNotFoundError:
+        await update.message.reply_text("Primero registrá algunos gastos.")
+    except Exception as e:
+        print(f"Error en gráfico: {e}")
+        await update.message.reply_text("Hubo un problema al generar el gráfico.")
 
 # 4. Lanzar el bot  
 if __name__ == '__main__':
@@ -77,6 +134,7 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, procesar_mensaje))
     app.add_handler(CommandHandler("resumen", resumen))
     app.add_handler(CommandHandler("borrartodo", borrar_todo))
+    app.add_handler(CommandHandler("grafico", enviar_grafico))
     
     print("PesitoManager está escuchando... (Presiona Ctrl+C para detener)")
     app.run_polling()

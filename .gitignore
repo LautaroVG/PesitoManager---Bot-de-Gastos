@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.csv
+*.png
+
+// Este archivo es por seguridad. Es para que github no suba mi token ni datos personales.

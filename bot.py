@@ -7,14 +7,14 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# 1. Configuración de seguridad
+
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-# Configurar logs (para ver errores en la terminal)
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# 2. Comando de inicio
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
     await update.message.reply_text(
@@ -22,7 +22,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Enviame tus gastos así: 'Concepto Monto' (ej: Cafe 500)"
     )
 
-# Función para guardar en el archivo
+
 def guardar_gasto(concepto, monto):
     fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open('gastos.csv', 'a', newline='', encoding='utf-8') as archivo:
@@ -34,12 +34,12 @@ async def procesar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = update.message.text
     try:
         partes = texto.split()
-        monto = partes[-1].replace(',', '.') # Por si ponen coma en vez de punto
+        monto = partes[-1].replace(',', '.') 
         concepto = " ".join(partes[:-1])
         
         monto_float = float(monto)
         
-        # GUARDAR LOS DATOS
+        
         guardar_gasto(concepto, monto_float)
         
         await update.message.reply_text(f"✅ Anotado: {concepto} por ${monto_float:.2f}")
@@ -47,21 +47,21 @@ async def procesar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except (ValueError, IndexError):
         await update.message.reply_text("❌ Error. Formato: 'Concepto Monto' (ej: Cine 1200)")
 
-# NUEVO COMANDO: /resumen
+
 async def resumen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total = 0
     try:
         with open('gastos.csv', 'r', encoding='utf-8') as archivo:
             reader = csv.reader(archivo)
             for fila in reader:
-                if fila: # Evita líneas vacías
+                if fila: 
                     total += float(fila[2])
         
         await update.message.reply_text(f"📊 Tu gasto total acumulado es: ${total:.2f}")
     except FileNotFoundError:
         await update.message.reply_text("Aún no tenés gastos registrados.")
 
-# NUEVO COMANDO: /borrartodo
+
 async def borrar_todo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if os.path.exists('gastos.csv'):
         os.remove('gastos.csv')
@@ -79,7 +79,7 @@ async def enviar_grafico(update: Update, context: ContextTypes.DEFAULT_TYPE):
     montos = []
     
     try:
-        # 1. Leer los datos
+        
         with open('gastos.csv', 'r', encoding='utf-8') as archivo:
             reader = csv.reader(archivo)
             for fila in reader:
@@ -91,28 +91,28 @@ async def enviar_grafico(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("No hay datos suficientes para graficar.")
             return
 
-        # 2. Configuración estética del gráfico
-        plt.style.use('ggplot') # Estilo profesional
+       
+        plt.style.use('ggplot') 
         fig, ax = plt.subplots(figsize=(10, 6))
         
-        # Crear barras con un color sólido y bordes
+        
         barras = ax.bar(conceptos, montos, color='#5dade2', edgecolor='#2e86c1')
 
-        # Añadir etiquetas de datos sobre cada barra
+       
         ax.bar_label(barras, padding=3, fmt='$%.2f', fontsize=10, fontweight='bold')
 
-        # Títulos y etiquetas
+        
         ax.set_title('📊 Análisis de Gastos Personales', fontsize=16, pad=20, fontweight='bold')
         ax.set_ylabel('Monto en Pesos ($)', fontsize=12)
         ax.set_xlabel('Conceptos', fontsize=12)
         
-        # Ajustar para que no se corten los nombres largos
+        
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
 
-        # 3. Guardar y enviar
+        
         imagen_path = 'reporte_gastos.png'
-        plt.savefig(imagen_path, dpi=300) # dpi=300 para alta resolución
+        plt.savefig(imagen_path, dpi=300) 
         plt.close()
 
         with open(imagen_path, 'rb') as foto:
@@ -126,7 +126,7 @@ async def enviar_grafico(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Error en gráfico: {e}")
         await update.message.reply_text("Hubo un problema al generar el gráfico.")
 
-# 4. Lanzar el bot  
+
 if __name__ == '__main__':
     app = Application.builder().token(TOKEN).build()
     
